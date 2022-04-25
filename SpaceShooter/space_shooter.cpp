@@ -1,30 +1,46 @@
-/*
- * Space Shooter - a simple C++ game for Windows
- * developed by Carlos Hern�ndez Casta�eda - 2016
- *
- */
 #include <iostream>
-#include <stdlib.h> //Standard c and c++ libraries
-#include <conio.h>
-#include <stdio.h>
-#include <windows.h> // To take control over the terminal
+#include <stdlib.h>
+#include <stdio.h>     //Standard c and c++ libraries
+#include <windows.h>   // To take control over the terminal ... and use sleep function
+#include <conio.h>	   // to use getch() and kbhit() funcions
 #include <list>
 using namespace std;
+
 #define UP 72 // arrow keys' ascii numbers
 #define LEFT 75
 #define RIGHT 77
 #define DOWN 80
 
+// The default size of the Windows terminal is 25 rows x 80 columns
+#define SCREEN_WIDTH  80
+#define SCREEN_HEIGHT 25
+
+char SpaceShip_shape[3][5] = { ' ' , ' ' , (char)30  , ' ' , ' ' ,
+						 ' ' , ' ' , (char)4   , ' ' , ' ' ,
+						 (char)17  , (char)30  , (char)223 , (char)30  , (char)16	};
+
+char enemyShip_shape[3][5] = { '±', '±', '±', '±', '±',
+						       '|', '±', '±', '±', '|',
+						       ' ', ' ', '±', ' ', ' ',};
+
+char damage_shape[3][5] = { ' ' , ' ' , '*' , ' ' , ' ' ,
+						    ' ' , ' ' , '*' , ' ' , ' ' ,
+					  	    '*' , '*' , '*' , '*' , '*'};
+
+// Allows to move inside the terminal using coordinates
+//using windows.h library
 void gotoxy(int x, int y)
-{ // Allows to move inside the terminal using coordinates
+{
     HANDLE hCon = GetStdHandle(STD_OUTPUT_HANDLE);
     COORD dwPos;
     dwPos.X = x; // Starts from 0
     dwPos.Y = y; // Starts from 0
     SetConsoleCursorPosition(hCon, dwPos);
 }
+
+// Hides the cursor in terminal
 void HideCursor()
-{ // Hides the cursor :3
+{
     HANDLE hCon = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO cci;
     cci.dwSize = 1;
@@ -32,8 +48,9 @@ void HideCursor()
     SetConsoleCursorInfo(hCon, &cci);
 }
 
+// To clean a certain space in the terminal using two points ( a(x,y) ,b(x,y)
 void DrawWhiteSpace(int a_x, int a_y, int b_x, int b_y)
-{ // To clean a certain space in the terminal
+{
     for (int i = a_x; i < b_x; i++)
     {
         for (int j = a_y; j < b_y; j++)
@@ -43,24 +60,26 @@ void DrawWhiteSpace(int a_x, int a_y, int b_x, int b_y)
         }
     }
 }
+
+// This will draw a rectangular frame defined by two points ( a(x,y) ,b(x,y) )
 void DrawWindowFrame(int a_x, int a_y, int b_x, int b_y)
-{ // This will draw a rectangular frame defined by two points
+{
     DrawWhiteSpace(a_x, a_y, b_x, b_y);
-    for (int i = a_x; i < b_x; i++)
+    for (int i = a_x; i < b_x; i++) //upper and lower boundary
     {
         gotoxy(i, a_y);
         printf("%c", 205);
         gotoxy(i, b_y);
         printf("%c", 205);
     }
-    for (int i = a_y; i < b_y; i++)
+    for (int i = a_y; i < b_y; i++) //right and left boundary
     {
         gotoxy(a_x, i);
         printf("%c", 186);
         gotoxy(b_x, i);
         printf("%c", 186);
     }
-    gotoxy(a_x, a_y);
+    gotoxy(a_x, a_y);		//corners
     printf("%c", 201);
     gotoxy(b_x, a_y);
     printf("%c", 187);
@@ -69,9 +88,11 @@ void DrawWindowFrame(int a_x, int a_y, int b_x, int b_y)
     gotoxy(b_x, b_y);
     printf("%c", 188);
 }
+
+// Draws the game limits, and information that doesn't have to be printed repeatedly
 void DrawGameLimits()
-{                                  // Draws the game limits, and information that doesn't have to be printed repeatedly
-    DrawWindowFrame(1, 2, 79, 23); // The default size of the Windows terminal is 25 rows x 80 columns
+{
+    DrawWindowFrame(1, 2, SCREEN_WIDTH -1 , SCREEN_HEIGHT -2 ); // The default size of the Windows terminal is 25 rows x 80 columns
     gotoxy(2, 1);
     printf("HP:");
     gotoxy(16, 1);
@@ -79,6 +100,7 @@ void DrawGameLimits()
     gotoxy(50, 1);
     printf("SCORE:");
 }
+
 void WelcomeMessage()
 { // The main title, I tried to center it as best as I could
     int x = 13;
@@ -95,11 +117,19 @@ void WelcomeMessage()
     printf("      |_|");
     gotoxy(x, y + 6);
     printf("                 Press any key to play");
-    gotoxy(x, y + 7);
-    printf("         developed by Carlos Hernandez C. - 2016");
+    gotoxy(x, y + 10);
+    printf("team members : ");
+    gotoxy(x, y + 11);
+    printf("		Abdelrhman Ahmed");
+	gotoxy(x, y + 12);
+	printf("		Abdelrhman");
+	gotoxy(x, y + 13);
+	printf("		Hassan");
 }
+
+// When you lose the game you see this in screen
 void GameOverDefeatMessage()
-{ // When you lose the game you see this in screen
+{
     int a_x = 30;
     int a_y = 11;
     int b_x = a_x + 23;
@@ -107,9 +137,13 @@ void GameOverDefeatMessage()
     DrawWindowFrame(a_x, a_y, b_x, b_y);
     gotoxy(a_x + 1, a_y + 2);
     printf("      DEFEAT!!!");
+
+	gotoxy(1,24);
 }
+
+// When you win the game you see this in screen
 void GameOverVictoryMessage()
-{ // When you win the game you see this in screen
+{
     int a_x = 30;
     int a_y = 11;
     int b_x = a_x + 23;
@@ -117,13 +151,58 @@ void GameOverVictoryMessage()
     DrawWindowFrame(a_x, a_y, b_x, b_y);
     gotoxy(a_x + 1, a_y + 2);
     printf("      VICTORY!!!");
+
+	gotoxy(1,24);
 }
+
+// A special message for your special needs
 void SpecialMessage()
-{ // A special message for your special needs
-    DrawWhiteSpace(1, 1, 80, 24);
+{
+    DrawWhiteSpace(1, 1, SCREEN_WIDTH , SCREEN_HEIGHT-1 );
     gotoxy(30, 11);
     printf("Thanks for playing! :3");
 }
+
+
+class Bullet
+{
+private:
+    int x;
+    int y;
+
+public:
+    int X() { return x; }
+    int Y() { return y; }
+
+    Bullet(int _x, int _y)
+    {
+        x = _x;
+        y = _y;
+    }
+    
+    bool isOut()
+    {
+		if (y <= 3 || y >= SCREEN_HEIGHT - 2 )
+        { // If the Ship_bullet reaches the top of the map
+            gotoxy(x, y);
+            printf(" "); // It disappears
+            return true; // And informs the ame that it should no longer exist :c
+        }
+        else
+        {
+            return false;
+        }
+    }
+    void Move(int dir = 1) //for direction ... ( 1:up , 2:down )
+    {
+		gotoxy(x, y);
+		printf(" ");
+		(dir == 1) ? (y--) : (y++) ; //if condition
+		gotoxy(x, y);
+		printf("*"); // The shape of the Ship_bullet
+    }
+};
+
 
 class SpaceShip
 {
@@ -133,18 +212,13 @@ private:
     int hp;      // heart points
     int energy;  // energy points
     bool imDead; // is the ship dead?
+
 public:
     int X() { return x; }
     int Y() { return y; }
     int HP() { return hp; }
 
-    bool isDead()
-    {
-        DrawSpaceShipInfo(); // It's annoying to die and still see a heart on the screen
-        return imDead;
-    }
-
-    SpaceShip(int _x, int _y)
+    SpaceShip(int _x = SCREEN_WIDTH/2 , int _y = SCREEN_HEIGHT-5 )
     {
         x = _x;
         y = _y;
@@ -152,25 +226,36 @@ public:
         energy = 5;     // And 5 energy points every life
         imDead = false; // By default you are not dead
     }
+
+	bool isDead()
+    {
+        DrawSpaceShipInfo(); // It's annoying to die and still see a heart on the screen
+        return imDead;
+    }
+
+    // Displays HP and energy points, I aligned them with the labels printed in DrawGameLimits
     void DrawSpaceShipInfo()
-    { // Displays HP and energy points, I aligned them with the labels printed in DrawGameLimits
+    {
         gotoxy(5, 1);
         printf("     ");
-        for (int i = 0; i < hp; i++)
+        for (int i = 0; i < hp; i++) // draw HP
         {
             gotoxy(5 + i, 1);
             printf("%c", 3);
         }
+        
         gotoxy(23, 1);
         printf("     ");
-        for (int i = 0; i < energy; i++)
+        for (int i = 0; i < energy; i++) // draw energy
         {
             gotoxy(23 + i, 1);
             printf("%c", 222);
         }
     }
+
+    // This is our spaceship body
     void Draw()
-    { // This is our spaceship
+    {
         gotoxy(x, y);
         printf("  %c  ", 30);
         gotoxy(x, y + 1);
@@ -178,8 +263,10 @@ public:
         gotoxy(x, y + 2);
         printf("%c%c%c%c%c", 17, 30, 223, 30, 16);
     }
+
+    // Erase the old spaceship from screen
     void Erase()
-    { // This was or spaceship
+    {
         gotoxy(x, y);
         printf("     ");
         gotoxy(x, y + 1);
@@ -187,14 +274,17 @@ public:
         gotoxy(x, y + 2);
         printf("     ");
     }
+
+    // Triggered by the enemy_ship_itrs that hit the spaceship
     void Damage()
-    { // Triggered by the asteroids that hit the spaceship
+    {
         energy--;
         if (energy == 0)
         {
             Explosion();
         }
-        else
+
+        else 
         {
             Erase(); // You can omit this part, is meant to visually tell you that you were hit
             gotoxy(x, y);
@@ -206,8 +296,10 @@ public:
             Sleep(100);
         }
     }
+
+    // When you lose a heart :c
     void Explosion()
-    { // When you lose a heart :c
+    {
         hp--;
         Erase();
         gotoxy(x, y);
@@ -233,207 +325,315 @@ public:
         gotoxy(x, y + 2);
         printf("* * *");
         Sleep(100);
+
         if (hp > 0)
         { // If you still have a heart or more
             energy = 5;
         }
+
         else
         { // If you don't
             imDead = true;
         }
     }
+
+	bool Collision(Bullet B)
+	{
+		if ( ( (B.X() >= x) && (B.X() <= x+5) ) && ( (B.Y() >= y) && (B.Y() <=y+2) ) )
+        {
+            Damage(); // The enemy_ship_itr hurts
+			return true;
+        }
+
+		else 
+			return false;
+	}
+
+    // The main function of the spaceship
     void Move()
-    { // The main function of the spaceship
+    {
         if (_kbhit())
         {                        // If you move the spaceship
-            Erase();             // Look I'm invisible
+           Erase();				 //to delete the old spaceship
             char key = _getch(); // What did you type?
             switch (key)
             { // Checks if the spaceship won't leave the game boundaries
             case LEFT:
+			case 'a':
+			case 'A':
                 if (x > 2)
                     x -= 1;
                 break;
             case RIGHT:
-                if (x + 4 < 77)
+			case 'd':
+			case 'D':
+                if (x + 4 < SCREEN_WIDTH-3 )
                     x += 1;
                 break;
             case UP:
+			case 'w':
+			case 'W':
                 if (y > 3)
                     y -= 1;
                 break;
             case DOWN:
-                if (y + 2 < 22)
+			case 's':
+			case 'S':
+                if (y + 2 < SCREEN_HEIGHT-3 )
                     y += 1;
                 break;
             }
         }
+        
         Draw(); // The spaceship is drawn regardless if you moved it or not, if you did then it will appear in it's new position.
     }
 };
-class Asteroid
+
+class EnemyShip
 {
 private:
-    int x;
-    int y;
-
+    int x;       // x coordinate
+    int y;       // y coordinate
+    int hp;      // heart points
+    bool is_Destroyed; // is the ship dead?
 public:
-    int X() { return x; }
+	int X() { return x; }
     int Y() { return y; }
+    int HP() { return hp; }
 
-    Asteroid(int _x, int _y)
-    {
-        x = _x;
+	EnemyShip(int _x , int _y , int _hp = 1 )
+	{
+		x = _x;
         y = _y;
-    }
-    void Draw()
-    {
-        gotoxy(x, y);
-        printf("*"); // Fear the asteroids!!
-    }
-    void Collision(SpaceShip &ss) // The asteroid finds the spaceship
-    {
-        if (((x >= ss.X()) && (x <= ss.X() + 5)) && ((y >= ss.Y()) && (y <= ss.Y() + 2)))
-        {                // Depending on the shape of the spaceship you have to tinker when the asteroid really hits you
-            ss.Damage(); // The asteroid hurts
-            gotoxy(x, y);
-            printf(" ");         // And the asteroid is "destroyed"
-            x = rand() % 74 + 3; // The truth is it just teleports to the top of the map
-            y = 4;
-        }
-        else
-        {
-            gotoxy(x, y);
-            printf(" ");
-            y++;
-            if (y > 22)
-            {                        // If the asteroid goes too down in the map
-                x = rand() % 74 + 3; // It will be teleported to the top
-                y = 4;
-            }
-            Draw();
-        }
-    }
-};
-class Bullet
-{
-private:
-    int x;
-    int y;
+        hp = _hp;         // I designed the game to have 3 lifes
+        is_Destroyed = false; // By default you are not dead
+	};
 
-public:
-    int X() { return x; }
-    int Y() { return y; }
-    Bullet(int _x, int _y)
+	bool isDestroyed()
+	{
+		return is_Destroyed;
+	}
+
+	void Draw()
+	{
+		gotoxy(x, y);
+        printf("±±±±±");
+        gotoxy(x, y + 1);
+        printf("|±±±|");
+        gotoxy(x, y + 2);
+        printf("  ±  ");
+	}
+
+	 // Erase the old enemyShip from screen
+    void Erase()
     {
-        x = _x;
-        y = _y;
+        gotoxy(x, y);
+        printf("     ");
+        gotoxy(x, y + 1);
+        printf("     ");
+        gotoxy(x, y + 2);
+        printf("     ");
     }
-    bool isOut()
+
+	    // Triggered by the enemy_ship_itrs that hit the spaceship
+    void Damage()
     {
-        if (y <= 3)
-        { // If the bullet reaches the top of the map
-            gotoxy(x, y);
-            printf(" "); // It disappears
-            return true; // And informs the ame that it should no longer exist :c
-        }
-        else
+        hp--;
+        if (hp == 0)
         {
-            return false;
+			is_Destroyed = true;
+            Explosion();
+        }
+
+        else 
+        {
+            Erase(); // You can omit this part, is meant to visually tell you that you were hit
+            gotoxy(x, y);
+            printf("  *  ");
+            gotoxy(x, y + 1);
+            printf("  *  ");
+            gotoxy(x, y + 2);
+            printf("*****");
+            Sleep(100);
         }
     }
-    void Move()
+
+    // When you lose a heart :c
+    void Explosion()
     {
+        Erase();
         gotoxy(x, y);
-        printf(" ");
-        y--;
+        printf("  *  ");
+        gotoxy(x, y + 1);
+        printf("  *  ");
+        gotoxy(x, y + 2);
+        printf("*****");
+        Sleep(100);
+        Erase();
         gotoxy(x, y);
-        printf("."); // The shape of the bullet
+        printf(" * * ");
+        gotoxy(x, y + 1);
+        printf("* * *");
+        gotoxy(x, y + 2);
+        printf(" * * ");
+        Sleep(100);
+        Erase();
+        gotoxy(x, y);
+        printf("*   *");
+        gotoxy(x, y + 1);
+        printf(" * * ");
+        gotoxy(x, y + 2);
+        printf("* * *");
+		Erase();
+        Sleep(100);
     }
+
+	bool Collision(Bullet B)
+	{
+		if ( ( (B.X() >= x) && (B.X() <= x+5) ) && ( (B.Y() >= y) && (B.Y() <=y+2) ) )
+        {
+            Damage(); // The enemy_ship_itr hurts
+			return true;
+        }
+
+		else 
+			return false;
+	}
+
+	void Move( int moving_dir = 0 )
+	{
+		if( !moving_dir ) //for moving direction ... (0:stoped , 1:left , 2:rigth , 3:up , 4:down )
+		{
+			switch (moving_dir)
+			{
+			case 1:
+				if (x > 2)
+					x -= 1;
+				break;
+			case 2:
+				if (x + 4 < SCREEN_WIDTH-3 )
+					x += 1;
+				break;
+			case 3:
+				if (y > 3)
+					y -= 1;
+				break;
+			case 4:
+				if (y + 2 < SCREEN_HEIGHT-3 )
+					y += 1;
+				break;
+			default:
+				break;
+			}
+		}
+
+		Draw();
+	}
 };
+
 int main()
 {
-    HideCursor();
-    WelcomeMessage();
-    _getch();
-    DrawGameLimits();
+	system("cls");
+	HideCursor();
+	WelcomeMessage();
+	_getch();
+	DrawGameLimits();
+	int score = 0;
 
-    list<Bullet *> Bullets;          // We will use a dynamic list for the bullets in the game
-    list<Bullet *>::iterator bullet; // And an iterator for the list
+	SpaceShip space_ship(40,20);
+	space_ship.DrawSpaceShipInfo();
 
-    list<Asteroid *> Asteroids; // The same goes for the asteroids
-    list<Asteroid *>::iterator asteroid;
+	list<Bullet *> SpaceShip_Bullets;          // We will use a dynamic list for the Bullets in the game
+    list<Bullet *>::iterator Ship_bullet_itr; // And an iterator for the list
 
-    for (int i = 0; i < 10; i++) // Pick as many asteroids as you want
-    {                            // They are randomly placed in the map but not too low
-        Asteroids.push_back(new Asteroid(rand() % 78 + 1, rand() % 4 + 3));
-    }
+	list<EnemyShip *> enemy_ship;
+	list<EnemyShip *>::iterator enemy_ship_itr;
 
-    SpaceShip ss = SpaceShip(40, 20); // Here our adventure begins
-    int score = 0;                    // Your score :3
+	list<Bullet *> enemyShip_Bullets;
+    list<Bullet *>::iterator enemy_bullet_itr;
 
-    while (!ss.isDead() && score != 100) // If you die or reach 100 points the game ends
-    {
-        if (_kbhit())
+	int number_of_enemy = 12;
+
+	for(int i = 0 ;i <= number_of_enemy*5  ; i += 6 ) //5 is the size of ship
+	{
+		enemy_ship.push_back(new EnemyShip( i+2 , 3 ) );
+	}
+
+	while ( !space_ship.isDead() && !enemy_ship.empty() )
+	{
+		if (_kbhit())
         {
             char key = _getch();
             if (key == ' ')
-            { // If you press the space bar you add a bullet to the bullet list
-                Bullets.push_back(new Bullet(ss.X() + 2, ss.Y() - 1));
+            { // If you press the space bar you add a Ship_bullet to the Ship_bullet list
+                SpaceShip_Bullets.push_back(new Bullet(space_ship.X() + 2, space_ship.Y() - 1));
             }
         }
-        for (bullet = Bullets.begin(); bullet != Bullets.end(); bullet++)
-        { // For every bullet that is in space
-            (*bullet)->Move();
-            if ((*bullet)->isOut())
-            {                     // If the bullet reached the end of the map
-                delete (*bullet); // It gets deleted
-                bullet = Bullets.erase(bullet);
+
+		for (Ship_bullet_itr = SpaceShip_Bullets.begin(); Ship_bullet_itr != SpaceShip_Bullets.end(); Ship_bullet_itr++)
+        { // For every Ship_bullet that is in space
+            (*Ship_bullet_itr)->Move(1); //1 means up
+            if ((*Ship_bullet_itr)->isOut())
+            {                     // If the Ship_bullet reached the end of the map
+				delete (*Ship_bullet_itr); // It gets deleted
+				Ship_bullet_itr = SpaceShip_Bullets.erase(Ship_bullet_itr);
             }
         }
-        for (asteroid = Asteroids.begin(); asteroid != Asteroids.end(); asteroid++)
-        { // Every asteroid checks if the spaceship shares it's coordinates :3
-            (*asteroid)->Collision(ss);
-        }
-        for (asteroid = Asteroids.begin(); asteroid != Asteroids.end(); asteroid++)
-        {
-            for (bullet = Bullets.begin(); bullet != Bullets.end(); bullet++)
-            {                                // asteroid-bullet collision
-                int astX = (*asteroid)->X(); // Coordinates of the asteroid
-                int astY = (*asteroid)->Y();
-                int bulX = (*bullet)->X(); // Coordinates of the bullet
-                int bulY = (*bullet)->Y();
-                if ((astX == bulX) && ((astY == bulY) || (astY + 1 == bulY)))
-                { // Chances are that in the Y axis they never reach the same value, that case must be considered
-                    gotoxy(bulX, bulY);
-                    printf(" "); // Makes the bullet invisible
-                    gotoxy(astX, astY);
-                    printf("X");
-                    printf(" ");      // I still have my doubts in this part, but it tries to signal a collision, sometimes the X remains theme...
-                    delete (*bullet); // You delete the bullet
-                    bullet = Bullets.erase(bullet);
-                    delete (*asteroid); // And the asteroid
-                    asteroid = Asteroids.erase(asteroid);
-                    Asteroids.push_back(new Asteroid(rand() % 78 + 1, rand() % 4 + 3)); // in order to not reduce the number of asteroids I add one everytime one is destroyed
-                    score += 10;                                                        // And you get 10 points for a job well done :3
-                }
-            }
-        }
-        ss.Move();
+
+		for (enemy_bullet_itr = enemyShip_Bullets.begin(); enemy_bullet_itr != enemyShip_Bullets.end(); enemy_bullet_itr++)
+		{ // For every bullet that is in space
+			(*enemy_bullet_itr)->Move(2); //2 means down
+			if ((*enemy_bullet_itr)->isOut())
+			{                     // If the bullet reached the end of the map
+				delete (*enemy_bullet_itr); // It gets deleted
+				enemy_bullet_itr = SpaceShip_Bullets.erase(enemy_bullet_itr);
+			}
+		}
+
+		for(enemy_ship_itr = enemy_ship.begin(); enemy_ship_itr != enemy_ship.end(); enemy_ship_itr++)
+		{
+			(*enemy_ship_itr)-> Move(0); //0 means constant , so just draw it
+		}
+
+		for (enemy_ship_itr = enemy_ship.begin(); enemy_ship_itr != enemy_ship.end(); enemy_ship_itr++)
+		{
+			for ( Ship_bullet_itr = SpaceShip_Bullets.begin() ; Ship_bullet_itr != SpaceShip_Bullets.end() ;Ship_bullet_itr++ )
+			{										
+				if ( (*enemy_ship_itr)-> Collision( **Ship_bullet_itr)  )
+				{
+					delete (*Ship_bullet_itr);
+					Ship_bullet_itr = SpaceShip_Bullets.erase(Ship_bullet_itr);
+					if( (*enemy_ship_itr)-> isDestroyed() )
+					{
+						delete (*enemy_ship_itr);
+						enemy_ship_itr = enemy_ship.erase(enemy_ship_itr);
+						score += 10;		// you get 10 points
+					}
+				}
+			}
+		}
+
+		for ( enemy_bullet_itr = enemyShip_Bullets.begin() ; enemy_bullet_itr != enemyShip_Bullets.end() ;enemy_bullet_itr++ )
+		{										
+			if ( space_ship.Collision( **enemy_bullet_itr)  )
+			{
+				delete (*enemy_bullet_itr);
+				enemy_bullet_itr = enemyShip_Bullets.erase(enemy_bullet_itr);
+			}
+		}
+
+		space_ship.Move();		//get input move, and draw
         gotoxy(56, 1);
         printf("%d", score);
-        Sleep(30); // This is essential, otherwise the game would be unplayable
-    }
-    if (!ss.isDead())
-    { // If you died
-        GameOverVictoryMessage();
-    }
-    else
-    { // If you won
-        GameOverDefeatMessage();
-    }
-    Sleep(5000);
-    SpecialMessage(); // Surprise
-    Sleep(5000);
-    return 0;
+        Sleep(30); // ** This is essential, otherwise the game would be unplayable **
+
+	}
+	
+	if ( space_ship.isDead() )  // If you died
+		GameOverDefeatMessage();
+    else  // If you won
+		GameOverVictoryMessage();
+	return 0;
 }
+
+
